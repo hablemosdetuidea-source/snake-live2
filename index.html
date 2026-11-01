@@ -1,0 +1,419 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SNAKE LIVE — Jungle 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#061b20;color:#efffff;font-family:Arial,sans-serif}body{display:grid;place-items:center;background:radial-gradient(ellipse at 50% 25%,#164b38,#04151b 75%)}
+#app{width:min(100vw,56.25vh);height:min(100vh,177.78vw);aspect-ratio:9/16;display:flex;flex-direction:column;padding:2%;gap:1%;background:linear-gradient(160deg,#092a2b,#06151d);border:1px solid #286f63;box-shadow:0 0 40px #00e0b755}
+header{display:flex;align-items:center;justify-content:space-between;min-height:6%}.brand{font-weight:1000;letter-spacing:.12em;font-size:clamp(17px,3.5vw,30px);text-shadow:0 0 14px #ff573d}.brand span{color:#ff6247}.live{font-size:clamp(9px,1.5vw,13px);color:#ff8a75;border:1px solid #ff624788;padding:6px 10px;border-radius:30px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;min-height:6%}.stat{background:#0c302f;border:1px solid #347c6c;border-radius:10px;text-align:center;padding:5px}.stat b{display:block;color:#7df5dc;font-size:clamp(16px,3vw,25px)}.stat small{font-size:clamp(8px,1.2vw,11px);color:#a7d4c6;letter-spacing:.08em}
+#stage{position:relative;flex:1;min-height:0;border-radius:14px;overflow:hidden;border:1px solid #4a9b7e;box-shadow:0 0 24px #00e0b733;background:#193b2d}#scene{width:100%;height:100%;display:block}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;background:#0316119c;backdrop-filter:blur(4px);padding:20px}#overlay.hidden{display:none}#overlay h1{color:#ff7658;font-size:clamp(25px,5vw,42px);margin:0 0 8px;text-shadow:0 0 20px #ff583d}#overlay p{line-height:1.5;color:#d9f4e8}
+button{border:0;border-radius:9px;padding:10px 16px;background:linear-gradient(90deg,#ff6948,#ffb347);color:#261008;font-weight:900;cursor:pointer}
+.bottom{display:grid;grid-template-columns:1.1fr 1fr;gap:7px;min-height:14%}.panel{background:#0b292b;border:1px solid #347466;border-radius:10px;padding:8px;overflow:hidden}.panel h3{font-size:clamp(9px,1.5vw,13px);color:#78e9d2;margin:0 0 5px}.panel div{font-size:clamp(8px,1.25vw,11px);line-height:1.55;color:#d2eee6}footer{font-size:clamp(8px,1.1vw,10px);color:#9bc4b6;display:flex;justify-content:space-between}
+
+#app{padding:0;gap:0;border:0;box-shadow:none;width:min(100vw,56.25vh);height:min(100vh,177.78vw);background:#061b20}
+header,.stats,.bottom,footer{display:none!important}
+#stage{width:100%;height:100%;flex:1;min-height:0;border:0;border-radius:0;box-shadow:none}
+#giftGuide{position:absolute;z-index:5;left:50%;top:15%;transform:translateX(-50%);min-width:max-content;text-align:center;background:#10142be8;border:1.5px solid #8d75ff;border-radius:13px;padding:8px 15px;color:#fff;font-size:clamp(13px,2.2vw,19px);font-weight:800;line-height:1.55;box-shadow:0 3px 16px #09051ca8;pointer-events:none}
+#giftGuide b{color:#ffe16a}
+#roseAlert{position:absolute;z-index:6;left:50%;top:27%;transform:translate(-50%,-50%) scale(.92);display:none;align-items:center;gap:10px;padding:12px 20px;border:2px solid #ff8a9b;border-radius:16px;background:linear-gradient(135deg,#5a1237ed,#24123ced);box-shadow:0 6px 26px #13051dcc;color:#fff;font-size:clamp(20px,4vw,34px);font-weight:900;white-space:nowrap;pointer-events:none;text-shadow:0 2px 5px #210515}
+#roseAlert.active{display:flex;animation:rosePop .28s ease-out both}
+#roseAlert .rose{font-size:1.35em;filter:drop-shadow(0 2px 5px #ff527d)}
+#roseAlert .conversion{color:#ffe16a}
+@keyframes rosePop{from{opacity:0;transform:translate(-50%,-50%) scale(.72)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+</style></head><body><main id="app">
+<header><div class="brand">SNAKE <span>JUNGLE 3D</span></div><div class="live">● LIVE MODE</div></header>
+<section class="stats"><div class="stat"><b id="score">0</b><small>MANZANAS</small></div><div class="stat"><b id="length">5</b><small>LARGO</small></div><div class="stat"><b id="time">00:00</b><small>TIEMPO</small></div></section>
+<div id="stage"><canvas id="scene"></canvas><div id="giftGuide"><div>🌹 <b>1</b> = 🍎 × 5</div></div><div id="roseAlert" aria-live="polite"><span class="rose">🌹</span><span class="conversion">× 1 = 🍎 × 5</span></div><div id="overlay"><div><h1>SNAKE JUNGLE</h1><p>Una serpiente 3D recorre la arena.<br>La comunidad la alimenta con regalos.</p><button id="start">INICIAR PARTIDA</button></div></div></div>
+<section class="bottom"><div class="panel"><h3>ACTIVIDAD LIVE</h3><div id="feed">Esperando conexión de TikFinity…</div></div><div class="panel"><h3>TOP SUPPORTERS</h3><div id="leaders">Todavía no hay aportes</div></div></section>
+<footer><span id="connection">TikFinity: desconectado</span><span>🌹 1 ROSA = 5 MANZANAS 🍎</span></footer></main>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const $=id=>document.getElementById(id),stage=$('stage'),canvas=$('scene');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x356d3d);scene.fog=null;
+const camera=new THREE.PerspectiveCamera(54.5,1,.1,120);camera.position.set(0,37,33);camera.lookAt(0,0,0);
+scene.add(new THREE.HemisphereLight(0xf3ffe9,0x52754a,2.8));
+const sun=new THREE.DirectionalLight(0xfff4d9,4.0);sun.position.set(-12,24,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;scene.add(sun);
+const mat=(c,r=.8,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
+const jungle=mat(0x6cae45),leafMats=[mat(0x2d7d39),mat(0x4d9c3f),mat(0x75b94b),mat(0x1e6238)],wood=mat(0x62412a),stone=mat(0x8b9970),boardMat=mat(0x247c68,.72),tile1=mat(0x318b72,.82),tile2=mat(0x287b66,.82),redMat=mat(0xff392b,.24),redDark=mat(0xc91f21,.3),gold=mat(0xffd447,.28),appleMat=mat(0xe92723,.25),greenLeaf=mat(0x3eae45);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(70,80),jungle);floor.rotation.x=-Math.PI/2;floor.position.y=-.8;floor.receiveShadow=true;scene.add(floor);
+const C=19,R=24,cell=1.05,ox=-(C-1)*cell/2,oz=-(R-1)*cell/2;
+const P=(x,z,y=.1)=>new THREE.Vector3(ox+x*cell,y,oz+z*cell);
+const board=new THREE.Group();scene.add(board);
+let base=new THREE.Mesh(new THREE.BoxGeometry(C*cell+.8,.55,R*cell+.8),mat(0x3c3021));base.position.y=-.4;base.castShadow=true;base.receiveShadow=true;board.add(base);
+let top=new THREE.Mesh(new THREE.BoxGeometry(C*cell+.35,.12,R*cell+.35),boardMat);top.position.y=-.07;top.receiveShadow=true;board.add(top);
+for(let z=0;z<R;z++)for(let x=0;x<C;x++){let t=new THREE.Mesh(new THREE.BoxGeometry(cell*.985,.035,cell*.985),(x+z)%2?tile1:tile2);t.position.copy(P(x,z,-.005));t.receiveShadow=true;board.add(t)}
+// decorative jungle perimeter trees, palms, ferns and rocks
+function tree(x,z,s=1,palm=false){let g=new THREE.Group();g.position.set(x,-.15,z);let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.17*s,.3*s,2.1*s,7),wood);trunk.position.y=1*s;trunk.castShadow=true;g.add(trunk);if(palm){for(let i=0;i<7;i++){let a=i*Math.PI*2/7,leaf=new THREE.Mesh(new THREE.ConeGeometry(.22*s,2.3*s,5),leafMats[i%4]);leaf.position.set(Math.cos(a)*.85*s,2.2*s,Math.sin(a)*.85*s);leaf.rotation.z=Math.cos(a)*-.9;leaf.rotation.x=Math.sin(a)*.9;leaf.castShadow=true;g.add(leaf)}}else{for(let i=0;i<5;i++){let l=new THREE.Mesh(new THREE.IcosahedronGeometry((1.05-i*.08)*s,1),leafMats[i%4]);l.position.set((Math.random()-.5)*.5*s,(2.1+i*.42)*s,(Math.random()-.5)*.5*s);l.castShadow=true;g.add(l)}}scene.add(g)}
+function fern(x,z,s=1){let g=new THREE.Group();g.position.set(x,0,z);for(let i=0;i<9;i++){let a=i*Math.PI*2/9;let f=new THREE.Mesh(new THREE.ConeGeometry(.18*s,1.9*s,5),leafMats[i%4]);f.position.set(Math.cos(a)*.58*s,.7*s,Math.sin(a)*.58*s);f.rotation.z=Math.cos(a)*-.9;f.rotation.x=Math.sin(a)*.9;g.add(f)}scene.add(g)}
+function rock(x,z,s=1){let r=new THREE.Mesh(new THREE.DodecahedronGeometry(.65*s),stone);r.position.set(x,.12*s,z);r.scale.y=.55;r.castShadow=true;scene.add(r)}
+// Río sinuoso fuera de los bordes del tablero, con orillas de piedra y reflejos.
+const riverMat=new THREE.MeshStandardMaterial({color:0x19b8d2,roughness:.19,metalness:.08,transparent:true,opacity:.94,side:THREE.DoubleSide});
+const riverBankMat=mat(0x88734a,.92);
+function ribbonAlong(points,width,y,material){
+ const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],y,p[1])),false,'centripetal',.18);
+ const steps=Math.max(60,points.length*18),verts=[],indices=[];
+ for(let i=0;i<=steps;i++){
+  const t=i/steps,p=curve.getPointAt(t),tan=curve.getTangentAt(t).normalize();
+  const side=new THREE.Vector3(tan.z,0,-tan.x).normalize().multiplyScalar(width*.5);
+  verts.push(p.x+side.x,p.y,p.z+side.z,p.x-side.x,p.y,p.z-side.z);
+  if(i<steps){const a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2)}
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();
+ const mesh=new THREE.Mesh(geo,material);mesh.receiveShadow=true;scene.add(mesh);return mesh;
+}
+const riverPath=[[-12.2,-15.8],[-12.7,-11.6],[-12.0,-7.2],[-12.6,-2.8],[-12.0,1.8],[-12.7,6.3],[-12.1,10.5],[-11.2,14.2],[-8.5,16.1],[-4.3,16.7],[0.5,16.3],[5.2,16.8],[9.2,16.0],[12.0,13.8],[12.5,9.8]];
+ribbonAlong(riverPath,2.0,-.745,riverBankMat);
+ribbonAlong(riverPath,1.25,-.70,riverMat);
+
+// Bright ripples follow the river so its surface reads clearly from the overhead camera.
+const rippleMat=new THREE.MeshBasicMaterial({color:0x9cf6ff,transparent:true,opacity:.42,side:THREE.DoubleSide});
+const ripples=[];
+for(let i=0;i<13;i++){
+ const t=.08+i*.067,p=new THREE.CatmullRomCurve3(riverPath.map(v=>new THREE.Vector3(v[0],-.685,v[1]))).getPointAt(Math.min(.98,t));
+ const ripple=new THREE.Mesh(new THREE.TorusGeometry(.24+(i%3)*.09,.018,5,16),rippleMat);
+ ripple.rotation.x=Math.PI/2;ripple.position.set(p.x,-.681,p.z);scene.add(ripple);ripples.push(ripple);
+}
+
+// Rocks and boulders along both riverbanks, kept outside the playing board.
+for(let i=0;i<24;i++){
+ const side=i%2===0?-1:1,z=-15.2+(i/2)*2.55;
+ const x=side*(12.65+(i%3)*.55);
+ rock(x,z,.55+(i%4)*.2);
+}
+
+// Crocodile: low green body, long snout, four feet, yellow eyes and tapered tail.
+function crocodile(x,z,angle=0){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=angle;
+ const croc=mat(0x397b35,.58),crocLight=mat(0x6b9b43,.52),dark=mat(0x172b15,.32),eyeGold=mat(0xffdc55,.28);
+ const body=new THREE.Mesh(new THREE.SphereGeometry(.58,18,14),croc);body.scale.set(1.35,.55,2.0);body.position.y=.33;body.castShadow=true;g.add(body);
+ const snout=new THREE.Mesh(new THREE.BoxGeometry(.7,.34,1.05),crocLight);snout.position.set(0,.22,-1.45);snout.castShadow=true;g.add(snout);
+ const jaw=new THREE.Mesh(new THREE.BoxGeometry(.72,.17,.88),mat(0x9c9a54));jaw.position.set(0,.07,-1.48);g.add(jaw);
+ for(const s of [-1,1]){
+  const eyeBase=new THREE.Mesh(new THREE.SphereGeometry(.17,12,10),croc);eyeBase.position.set(s*.31,.64,-.72);g.add(eyeBase);
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(.105,12,10),eyeGold);eye.position.set(s*.32,.69,-.77);g.add(eye);
+  const pupil=new THREE.Mesh(new THREE.SphereGeometry(.045,8,8),dark);pupil.position.set(s*.32,.7,-.86);g.add(pupil);
+  for(const zf of [-.55,.5]){const leg=new THREE.Mesh(new THREE.SphereGeometry(.22,12,10),croc);leg.scale.set(1.25,.65,1.0);leg.position.set(s*.58,.15,zf);leg.castShadow=true;g.add(leg)}
+ }
+ const tailCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,.28,.8),new THREE.Vector3(.08,.25,1.25),new THREE.Vector3(.18,.19,1.9)]);
+ const tail=new THREE.Mesh(new THREE.TubeGeometry(tailCurve,18,.20,10,false),croc);tail.castShadow=true;g.add(tail);
+ for(let i=0;i<5;i++){const scute=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),crocLight);scute.position.set(0,.61,.35+i*.2);scute.scale.set(1,.35,1);g.add(scute)}
+ scene.add(g);return g;
+}
+const crocodiles=[crocodile(-12.0,3.8,-.15),crocodile(11.9,9.2,Math.PI+.2)];
+
+// Monkeys perched on tree-side clearings: round ears, muzzle, arms, legs and curled tail.
+function monkey(x,z,turn=0){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=turn;
+ const fur=mat(0x765034,.8),furLight=mat(0xb27a4b,.8),face=mat(0xe0b58a,.8),eye=mat(0x15110c,.3);
+ const torso=new THREE.Mesh(new THREE.SphereGeometry(.34,14,12),fur);torso.scale.set(.9,1.25,.8);torso.position.y=.62;torso.castShadow=true;g.add(torso);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.31,16,14),fur);head.position.set(0,1.18,-.02);head.castShadow=true;g.add(head);
+ for(const s of [-1,1]){const ear=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),furLight);ear.position.set(s*.28,1.22,-.02);g.add(ear)}
+ const muzzle=new THREE.Mesh(new THREE.SphereGeometry(.19,12,10),face);muzzle.scale.set(1,.72,.6);muzzle.position.set(0,1.07,-.27);g.add(muzzle);
+ for(const s of [-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(.045,10,8),mat(0xffffff));e.position.set(s*.105,1.25,-.265);g.add(e);const p=new THREE.Mesh(new THREE.SphereGeometry(.023,8,8),eye);p.position.set(s*.105,1.25,-.305);g.add(p)}
+ for(const s of [-1,1]){
+  const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.095,.42,4,8),fur);arm.position.set(s*.34,.62,-.12);arm.rotation.z=s*.55;g.add(arm);
+  const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.32,4,8),fur);leg.position.set(s*.2,.18,.04);leg.rotation.z=-s*.25;g.add(leg)
+ }
+ const tailCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(.18,.55,.24),new THREE.Vector3(.55,.62,.55),new THREE.Vector3(.72,.95,.76),new THREE.Vector3(.48,1.2,.82)]);
+ const tail=new THREE.Mesh(new THREE.TubeGeometry(tailCurve,24,.055,8,false),fur);g.add(tail);
+ scene.add(g);return g;
+}
+const monkeys=[monkey(-11.9,-7.6,-.3),monkey(11.9,2.4,.45),monkey(-11.8,11.8,-.2)];
+
+for(let i=0;i<28;i++){let side=i%4,t=(Math.random()-.5)*31,x=side<2?t:(side===2?-13:13),z=side<2?(side===0?-19:19):t;tree(x,z,.7+Math.random()*.7,i%3===0)}
+// Filas de árboles adicionales a los costados y en ambos extremos del tablero.
+for(let i=0;i<14;i++){
+ const z=-13.5+i*2.08;
+ tree(-10.75,z,.78+(i%3)*.12,i%4===0);
+ tree(10.75,z,.82+((i+1)%3)*.10,i%4===1);
+}
+for(let i=0;i<9;i++){
+ const x=-10+i*2.5;
+ tree(x,-14.8,.82+(i%2)*.16,i%3===0);
+ tree(x,14.8,.78+((i+1)%2)*.18,i%3===1);
+}
+
+for(let i=0;i<20;i++){let x=(Math.random()-.5)*30,z=(Math.random()-.5)*38;if(Math.abs(x)<11&&Math.abs(z)<15)continue;if(i%2)fern(x,z,.7+Math.random()*.7);else rock(x,z,.5+Math.random()*.8)}
+// jungle board rim
+for(let x of [-1,1]){let rail=new THREE.Mesh(new THREE.BoxGeometry(.18,.35,R*cell+.8),mat(0x9c7943,.4));rail.position.set(x*(C*cell/2+.25),.15,0);rail.castShadow=true;scene.add(rail)}
+// continuous tube snake with glossy red-orange scales and rounded head
+let snake=[],bodyMesh=null,headGroup=new THREE.Group(),spotsGroup=new THREE.Group();
+scene.add(headGroup);scene.add(spotsGroup);
+const tailCap=new THREE.Mesh(new THREE.ConeGeometry(.42,.82,16),redMat);
+tailCap.castShadow=true;tailCap.receiveShadow=true;tailCap.visible=false;scene.add(tailCap);
+const bodyMaterial=new THREE.MeshStandardMaterial({color:0xf0442e,roughness:.24,metalness:.05}),bellyMaterial=mat(0xffa044,.35),eyeMaterial=mat(0x11151a,.15),white=mat(0xffffff,.15);
+let eyeBlinkParts=[];
+function clearGroup(g){while(g.children.length){let o=g.children.pop();if(o.geometry)o.geometry.dispose()}}
+function updateSnake(renderSnake=snake){
+ if(bodyMesh){scene.remove(bodyMesh);bodyMesh.geometry.dispose()}
+ clearGroup(spotsGroup);clearGroup(headGroup);eyeBlinkParts.length=0;
+ if(renderSnake.length>1){
+  let pts=renderSnake.map(p=>P(p.x,p.y,.42));
+  let curve=new THREE.CatmullRomCurve3(pts,false,'centripetal',.25);
+  let geo=new THREE.TubeGeometry(curve,Math.max(32,renderSnake.length*8),.43,12,false);
+  bodyMesh=new THREE.Mesh(geo,bodyMaterial);bodyMesh.castShadow=true;bodyMesh.receiveShadow=true;scene.add(bodyMesh);
+
+  // Rayas blancas más gruesas y visibles alrededor del cuerpo.
+  for(let i=2;i<renderSnake.length-1;i+=3){
+   let cur=renderSnake[i],prev=renderSnake[i-1],next=renderSnake[i+1];
+   let tangent=new THREE.Vector3(next.x-prev.x,0,next.y-prev.y);
+   if(tangent.lengthSq()<.001)continue;
+   tangent.normalize();
+   let band=new THREE.Mesh(new THREE.TorusGeometry(.42,.072,8,18),white);
+   band.position.copy(P(cur.x,cur.y,.43));
+   band.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),tangent);
+   band.castShadow=true;spotsGroup.add(band);
+  }
+
+  // Mantiene la terminación existente de la cola.
+  let tail=renderSnake[renderSnake.length-1],before=renderSnake[renderSnake.length-2];
+  let tailDirection=new THREE.Vector3(tail.x-before.x,0,tail.y-before.y);
+  if(tailDirection.lengthSq()<.001)tailDirection.set(1,0,0);
+  tailDirection.normalize();
+  tailCap.position.copy(P(tail.x,tail.y,.43));
+  tailCap.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tailDirection);
+  tailCap.visible=true;
+ }else{
+  tailCap.visible=false;
+ }
+
+ let h=renderSnake[0],p=P(h.x,h.y,.52);headGroup.position.copy(p);
+ let head=new THREE.Mesh(new THREE.SphereGeometry(.48,24,18),redMat);
+ head.scale.set(1.12,.9,1.18);head.castShadow=true;headGroup.add(head);
+ let belly=new THREE.Mesh(new THREE.SphereGeometry(.39,16,12),bellyMaterial);
+ belly.scale.set(1,.28,1);belly.position.set(0,-.22,-.04);headGroup.add(belly);
+
+ // Ojos grandes de estilo caricatura: sobresalen de la parte superior/frontal.
+ for(let side of [-1,1]){
+  let eyeGroup=new THREE.Group();
+  eyeGroup.position.set(side*.235,.285,.17);
+  headGroup.add(eyeGroup);
+
+  let socket=new THREE.Mesh(new THREE.SphereGeometry(.18,18,14),redDark);
+  socket.scale.set(1.05,1.08,.92);socket.castShadow=true;eyeGroup.add(socket);
+
+  let eye=new THREE.Mesh(new THREE.SphereGeometry(.15,20,16),white);
+  eye.scale.set(1,1.03,.9);eye.position.set(0,.015,.035);eye.castShadow=true;eyeGroup.add(eye);
+
+  let pupil=new THREE.Mesh(new THREE.SphereGeometry(.073,16,12),eyeMaterial);
+  pupil.position.set(0,.02,.148);eyeGroup.add(pupil);
+
+  let glint=new THREE.Mesh(new THREE.SphereGeometry(.028,10,8),mat(0xffffff,.12));
+  glint.position.set(-.026,.067,.196);eyeGroup.add(glint);
+
+  let smallGlint=new THREE.Mesh(new THREE.SphereGeometry(.012,8,8),white);
+  smallGlint.position.set(.045,.005,.198);eyeGroup.add(smallGlint);
+
+  eyeBlinkParts.push({group:eyeGroup,pupil});
+ }
+ if(renderSnake[1]){
+  let dx=h.x-renderSnake[1].x,dz=h.y-renderSnake[1].y;
+  headGroup.rotation.y=Math.atan2(dx,dz);
+ }
+}
+let apples=[],applePositions=[],motionFrom=null,motionTo=null,motionStart=0,motionDuration=155;
+function appleMesh(){let g=new THREE.Group();let a=new THREE.Mesh(new THREE.SphereGeometry(.28,16,12),appleMat);a.scale.set(1,1.08,.95);a.castShadow=true;g.add(a);let stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,.17,6),wood);stem.position.y=.3;g.add(stem);let leaf=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),greenLeaf);leaf.scale.set(1,.25,.5);leaf.position.set(.1,.28,0);g.add(leaf);return g}
+function syncApples(){while(apples.length<applePositions.length){let a=appleMesh();scene.add(a);apples.push(a)}while(apples.length>applePositions.length)scene.remove(apples.pop());applePositions.forEach((p,i)=>apples[i].position.copy(P(p.x,p.y,.48)))}
+const dirs=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}],key=p=>p.x+','+p.y,inside=p=>p.x>0&&p.x<C-1&&p.y>0&&p.y<R-1;
+const MAX_SNAKE_LENGTH=200; // Keeps enough free cells for safe route planning during long LIVE sessions.
+const MAX_VISIBLE_APPLES=12;
+let pendingApples=0,targetAppleKey=null;
+let wanderTrail=[],wanderVisits=new Map();
+const WANDER_MEMORY=135;
+function rememberWanderCell(p){
+ const k=key(p);wanderTrail.push(k);wanderVisits.set(k,(wanderVisits.get(k)||0)+1);
+ while(wanderTrail.length>WANDER_MEMORY){
+  const old=wanderTrail.shift(),left=(wanderVisits.get(old)||1)-1;
+  if(left<=0)wanderVisits.delete(old);else wanderVisits.set(old,left);
+ }
+}
+function freeAreaFrom(start,blocked){
+ const q=[start],seen=new Set([key(start)]);
+ for(let i=0;i<q.length&&seen.size<C*R;i++){
+  const p=q[i];
+  for(const d of dirs){
+   const n={x:p.x+d.x,y:p.y+d.y},k=key(n);
+   if(inside(n)&&!blocked.has(k)&&!seen.has(k)){seen.add(k);q.push(n)}
+  }
+ }
+ return seen.size;
+}
+function bfs(start,goal,blocked){
+ const q=[start],prev=new Map([[key(start),null]]);
+ for(let i=0;i<q.length;i++){
+  const p=q[i];
+  if(key(p)===key(goal)){
+   const path=[];let k=key(p);
+   while(prev.get(k)!==null){
+    const [x,y]=k.split(',').map(Number);path.push({x,y});k=prev.get(k);
+   }
+   return path.reverse();
+  }
+  for(const d of dirs){
+   const n={x:p.x+d.x,y:p.y+d.y},k=key(n);
+   if(inside(n)&&!blocked.has(k)&&!prev.has(k)){prev.set(k,key(p));q.push(n)}
+  }
+ }
+ return null;
+}
+function randomFreeCell(){
+ const free=[];
+ for(let y=1;y<R-1;y++)for(let x=1;x<C-1;x++){
+  const p={x,y},k=key(p);
+  if(!snake.some(s=>key(s)===k)&&!applePositions.some(a=>key(a)===k))free.push(p);
+ }
+ return free.length?free[Math.floor(Math.random()*free.length)]:null;
+}
+function fillAppleQueue(){
+ while(pendingApples>0&&applePositions.length<MAX_VISIBLE_APPLES){
+  const p=randomFreeCell();if(!p)break;
+  applePositions.push(p);pendingApples--;
+ }
+}
+function spawn(n=1){
+ pendingApples=Math.min(10000,pendingApples+Math.max(0,Math.floor(Number(n)||0)));
+ fillAppleQueue();
+}
+function safeRoute(path,food){
+ let body=snake.map(p=>({...p}));
+ for(const n of path){
+  // Account for every apple encountered on the way, not only the selected target.
+  const eating=applePositions.some(a=>key(a)===key(n));
+  const grow=eating&&body.length<MAX_SNAKE_LENGTH;
+  if(body.some((v,i)=>key(v)===key(n)&&!(i===body.length-1&&!grow)))return false;
+  body.unshift(n);
+  if(!grow)body.pop();
+ }
+ if(body.length<2)return true;
+ return !!bfs(body[0],body[body.length-1],new Set(body.slice(0,-1).map(key)));
+}
+function keepsTailReachableAfterMove(next){
+ const eating=applePositions.some(a=>key(a)===key(next)),grow=eating&&snake.length<MAX_SNAKE_LENGTH;
+ if(!inside(next)||snake.some((s,i)=>key(s)===key(next)&&!(i===snake.length-1&&!grow)))return false;
+ const body=[{...next},...snake.map(p=>({...p}))];
+ if(!grow)body.pop();
+ if(body.length<2)return true;
+ return !!bfs(body[0],body[body.length-1],new Set(body.slice(0,-1).map(key)));
+}
+function chooseWanderMove(head,blocked){
+ const tail=snake[snake.length-1];
+ const heading=snake.length>1?{x:head.x-snake[1].x,y:head.y-snake[1].y}:{x:1,y:0};
+ const options=[];
+ for(const d of dirs){
+  const n={x:head.x+d.x,y:head.y+d.y},k=key(n);
+  if(!inside(n)||!keepsTailReachableAfterMove(n))continue;
+  const areaBlocked=new Set(blocked);areaBlocked.delete(key(tail));areaBlocked.delete(k);
+  const area=freeAreaFrom(n,areaBlocked),visits=wanderVisits.get(k)||0;
+  const forward=d.x===heading.x&&d.y===heading.y;
+  const nearest=applePositions.length?Math.min(...applePositions.map(a=>Math.abs(a.x-n.x)+Math.abs(a.y-n.y))):0;
+  const value=Math.min(area,100)*.09+(visits===0?8:0)-(visits*5.5)+
+              (forward?1.25:-.6)-nearest*.035+(Math.random()*.45);
+  options.push({n,value});
+ }
+ options.sort((a,b)=>b.value-a.value);
+ return options.length?options[0].n:null;
+}
+function choose(){
+ const head=snake[0],blocked=new Set(snake.slice(0,-1).map(key));
+
+ // SIN MANZANAS: explorar libremente el tablero usando memoria de casillas recientes.
+ // No seguir la cola: esa estrategia provocaba el bucle repetitivo.
+ if(!applePositions.length){
+  targetAppleKey=null;
+  return chooseWanderMove(head,blocked);
+ }
+
+ // CON MANZANAS: perseguir el objetivo actual mientras su ruta siga siendo segura.
+ const target=applePositions.find(a=>key(a)===targetAppleKey);
+ if(target){
+  const path=bfs(head,target,blocked);
+  if(path&&path.length&&safeRoute(path,target))return path[0];
+  targetAppleKey=null;
+ }
+
+ // Buscar la manzana alcanzable más cercana cuya ruta no encierre a la serpiente.
+ let best=null,bestPath=null;
+ for(const apple of applePositions){
+  const path=bfs(head,apple,blocked);
+  if(path&&path.length&&safeRoute(path,apple)&&(!bestPath||path.length<bestPath.length)){
+   best=apple;
+   bestPath=path;
+  }
+ }
+ if(bestPath){
+  targetAppleKey=key(best);
+  return bestPath[0];
+ }
+
+ // Si ninguna comida tiene ruta segura en este instante, explorar para abrir espacio
+ // y volver a calcular las rutas en el siguiente movimiento.
+ targetAppleKey=null;
+ return chooseWanderMove(head,blocked);
+}
+let score=0,alive=false,started=0,timer=null,feed=[],leaders={},lastGiftAt=0,lastIdleAppleAt=0;const IDLE_APPLE_INTERVAL=5000;
+function updateUI(){$('score').textContent=score;$('length').textContent=snake.length;motionFrom=snake.map(p=>({...p}));motionTo=snake.map(p=>({...p}));motionStart=performance.now();updateSnake();syncApples()}
+function finish(msg){alive=false;clearInterval(timer);$('overlay').classList.remove('hidden');$('overlay').innerHTML=`<div><h1>FIN DE PARTIDA</h1><p>${msg}<br>Manzanas comidas: ${score}<br>Largo final: ${snake.length}</p><button id="again">NUEVA PARTIDA</button></div>`;$('again').onclick=start}
+function step(){
+ if(!alive)return;
+ const before=snake.map(p=>({...p}));
+ let next=choose();
+ if(!next){
+  const head=snake[0],blocked=new Set(snake.slice(0,-1).map(key));
+  next=chooseWanderMove(head,blocked);
+  if(!next){
+   const candidates=dirs.map(d=>({x:head.x+d.x,y:head.y+d.y}))
+    .filter(p=>inside(p)&&!snake.some((s,i)=>key(s)===key(p)&&i!==snake.length-1));
+   candidates.sort((a,b)=>freeAreaFrom(b,new Set(snake.slice(0,-1).map(key)))-freeAreaFrom(a,new Set(snake.slice(0,-1).map(key))));
+   next=candidates[0]||null;
+  }
+ }
+ if(!next)return;
+ let eating=applePositions.some(a=>key(a)===key(next));
+ let grow=eating&&snake.length<MAX_SNAKE_LENGTH;
+ if(!inside(next)||snake.some((s,i)=>key(s)===key(next)&&!(i===snake.length-1&&!grow))){
+  const alternative=chooseWanderMove(snake[0],new Set(snake.slice(0,-1).map(key)));
+  if(!alternative)return;
+  next=alternative;
+  eating=applePositions.some(a=>key(a)===key(next));
+  grow=eating&&snake.length<MAX_SNAKE_LENGTH;
+ }
+ snake.unshift(next);
+ if(eating){
+  applePositions=applePositions.filter(a=>key(a)!==key(next));
+  targetAppleKey=null;score++;
+ }
+ if(!grow)snake.pop();
+ rememberWanderCell(next);
+ fillAppleQueue();
+ motionFrom=before;motionTo=snake.map(p=>({...p}));motionStart=performance.now();
+ $('score').textContent=score;$('length').textContent=snake.length;syncApples();
+}
+function start(){
+ clearInterval(timer);
+ snake=[];
+ wanderTrail=[];wanderVisits.clear();targetAppleKey=null;
+ for(let i=0;i<6;i++)snake.push({x:8-i,y:12});
+ for(const part of snake)rememberWanderCell(part);
+ applePositions=[];pendingApples=0;score=0;
+ spawn(1);
+ alive=true;started=Date.now();lastGiftAt=0;lastIdleAppleAt=Date.now();
+ $('overlay').classList.add('hidden');updateUI();
+ timer=setInterval(()=>{
+  step();
+  const now=Date.now();
+  if(alive&&now-lastGiftAt>=IDLE_APPLE_INTERVAL&&now-lastIdleAppleAt>=IDLE_APPLE_INTERVAL){
+   spawn(1);lastIdleAppleAt=now;syncApples();
+  }
+  const elapsed=Math.floor((now-started)/1000);
+  $('time').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');
+ },155);
+}
+function log(s){feed.unshift(s);feed=feed.slice(0,4);$('feed').innerHTML=feed.join('<br>')}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+let roseAlertTimer=null;function showRoseAlert(n){const alert=$('roseAlert');alert.innerHTML=`<span class="rose">🌹</span><span class="conversion">× ${Math.max(1,n)} = 🍎 × ${Math.max(1,n)}</span>`;alert.classList.remove('active');void alert.offsetWidth;alert.classList.add('active');clearTimeout(roseAlertTimer);roseAlertTimer=setTimeout(()=>alert.classList.remove('active'),5000)}
+function add(n,user,kind){if(!alive)start();spawn(Math.min(100,n));if(kind==='rosa')showRoseAlert(n);if(kind!=='nuevo seguidor'){lastGiftAt=Date.now();lastIdleAppleAt=Date.now()}leaders[user]=(leaders[user]||0)+n;$('leaders').innerHTML=Object.entries(leaders).sort((a,b)=>b[1]-a[1]).slice(0,5).map((v,i)=>`${i+1}. ${esc(v[0])} — ${v[1]} 🍎`).join('<br>');log(`${esc(user)}: +${n} 🍎 (${kind})`);syncApples()}
+let ws;function connect(){try{ws=new WebSocket('ws://127.0.0.1:21213/');ws.onopen=()=>{$('connection').textContent='TikFinity: conectado';log('Conectado a TikFinity')};ws.onclose=()=>{$('connection').textContent='TikFinity: desconectado';setTimeout(connect,4000)};ws.onerror=()=>{$('connection').textContent='TikFinity: revisar conexión'};ws.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch{return}let ev=(d.event||d.type||d.eventType||'').toLowerCase(),v=d.data||d,u=v.uniqueId||v.nickname||v.username||'Espectador';if(ev.includes('gift')||v.giftId!==undefined||v.giftName){let nm=(v.giftName||v.gift?.name||'').toLowerCase(),count=Number(v.repeatCount||v.repeat_count||1);if(v.repeatEnd===false)return;let rose=Number(v.giftId)===5655||nm.includes('rose')||nm.includes('rosa');if(rose)add(count*5,u,'rosa')}}}catch(e){$('connection').textContent='TikFinity: no disponible'}}
+$('start').onclick=start;
+function resize(){let r=stage.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(stage);resize();
+function animate(){requestAnimationFrame(animate);let now=performance.now(),t=now*.001;let blink=Math.max(0,1-Math.abs((t%5.8)-5.05)/.11);for(let i=0;i<eyeBlinkParts.length;i++){let e=eyeBlinkParts[i];e.group.scale.y=1-.84*blink;e.pupil.position.x=Math.sin(t*1.25+i*.7)*.012}if(motionFrom&&motionTo){let a=Math.min(1,(now-motionStart)/motionDuration);a=a*a*(3-2*a);let count=Math.max(motionFrom.length,motionTo.length),shown=[];for(let i=0;i<count;i++){let p0=motionFrom[Math.min(i,motionFrom.length-1)]||motionTo[i],p1=motionTo[Math.min(i,motionTo.length-1)]||p0;shown.push({x:p0.x+(p1.x-p0.x)*a,y:p0.y+(p1.y-p0.y)*a})}updateSnake(shown);if(a>=1)motionFrom=motionTo=null}headGroup.position.y+=Math.sin(t*7)*.006;apples.forEach((a,i)=>{a.position.y=.48+Math.sin(t*2+i)*.045;a.rotation.y=t*.45});ripples.forEach((r,i)=>{r.material.opacity=.22+.22*(.5+.5*Math.sin(t*1.4+i));r.scale.setScalar(.9+.12*Math.sin(t*1.1+i))});monkeys.forEach((m,i)=>{m.position.y=.025+Math.sin(t*1.1+i*1.7)*.035;m.rotation.z=Math.sin(t*.7+i)*.025});crocodiles.forEach((c,i)=>{c.position.y=.018+Math.sin(t*.8+i)*.018;c.rotation.y+=(Math.sin(t*.25+i)*.0008)});renderer.render(scene,camera)}animate();connect();
+</script></body></html>
