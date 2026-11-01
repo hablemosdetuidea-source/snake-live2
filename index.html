@@ -35,6 +35,12 @@ scene.add(new THREE.HemisphereLight(0xf3ffe9,0x52754a,2.8));
 const sun=new THREE.DirectionalLight(0xfff4d9,4.0);sun.position.set(-12,24,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;scene.add(sun);
 const mat=(c,r=.8,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
 const jungle=mat(0x6cae45),leafMats=[mat(0x2d7d39),mat(0x4d9c3f),mat(0x75b94b),mat(0x1e6238)],wood=mat(0x62412a),stone=mat(0x8b9970),boardMat=mat(0x247c68,.72),tile1=mat(0x318b72,.82),tile2=mat(0x287b66,.82),redMat=mat(0xff392b,.24),redDark=mat(0xc91f21,.3),gold=mat(0xffd447,.28),appleMat=mat(0xe92723,.25),greenLeaf=mat(0x3eae45);
+// Textura orgánica de pasto: pequeñas briznas, motas y variaciones de verde.
+const grassCanvas=document.createElement('canvas');grassCanvas.width=grassCanvas.height=512;
+const grassCtx=grassCanvas.getContext('2d');grassCtx.fillStyle='#568d38';grassCtx.fillRect(0,0,512,512);
+for(let i=0;i<10500;i++){const x=Math.random()*512,y=Math.random()*512;grassCtx.fillStyle=['rgba(23,75,31,.20)','rgba(177,207,87,.20)','rgba(37,112,43,.24)','rgba(210,202,105,.12)'][i%4];grassCtx.beginPath();grassCtx.ellipse(x,y,Math.random()*2.2+.4,Math.random()*4+.8,Math.random()*Math.PI,0,Math.PI*2);grassCtx.fill()}
+for(let i=0;i<1250;i++){const x=Math.random()*512,y=Math.random()*512;grassCtx.strokeStyle=i%3?'rgba(24,83,34,.35)':'rgba(193,214,112,.38)';grassCtx.lineWidth=.7+Math.random()*1.1;grassCtx.beginPath();grassCtx.moveTo(x,y);grassCtx.quadraticCurveTo(x-2+Math.random()*4,y-4,x-4+Math.random()*8,y-7-Math.random()*5);grassCtx.stroke()}
+const grassTexture=new THREE.CanvasTexture(grassCanvas);grassTexture.wrapS=grassTexture.wrapT=THREE.RepeatWrapping;grassTexture.repeat.set(5,6);grassTexture.colorSpace=THREE.SRGBColorSpace;grassTexture.anisotropy=8;jungle.map=grassTexture;jungle.color.set(0xffffff);jungle.needsUpdate=true;
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(70,80),jungle);floor.rotation.x=-Math.PI/2;floor.position.y=-.8;floor.receiveShadow=true;scene.add(floor);
 const C=19,R=24,cell=1.05,ox=-(C-1)*cell/2,oz=-(R-1)*cell/2;
 const P=(x,z,y=.1)=>new THREE.Vector3(ox+x*cell,y,oz+z*cell);
@@ -43,7 +49,16 @@ let base=new THREE.Mesh(new THREE.BoxGeometry(C*cell+.8,.55,R*cell+.8),mat(0x3c3
 let top=new THREE.Mesh(new THREE.BoxGeometry(C*cell+.35,.12,R*cell+.35),boardMat);top.position.y=-.07;top.receiveShadow=true;board.add(top);
 for(let z=0;z<R;z++)for(let x=0;x<C;x++){let t=new THREE.Mesh(new THREE.BoxGeometry(cell*.985,.035,cell*.985),(x+z)%2?tile1:tile2);t.position.copy(P(x,z,-.005));t.receiveShadow=true;board.add(t)}
 // decorative jungle perimeter trees, palms, ferns and rocks
-function tree(x,z,s=1,palm=false){let g=new THREE.Group();g.position.set(x,-.15,z);let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.17*s,.3*s,2.1*s,7),wood);trunk.position.y=1*s;trunk.castShadow=true;g.add(trunk);if(palm){for(let i=0;i<7;i++){let a=i*Math.PI*2/7,leaf=new THREE.Mesh(new THREE.ConeGeometry(.22*s,2.3*s,5),leafMats[i%4]);leaf.position.set(Math.cos(a)*.85*s,2.2*s,Math.sin(a)*.85*s);leaf.rotation.z=Math.cos(a)*-.9;leaf.rotation.x=Math.sin(a)*.9;leaf.castShadow=true;g.add(leaf)}}else{for(let i=0;i<5;i++){let l=new THREE.Mesh(new THREE.IcosahedronGeometry((1.05-i*.08)*s,1),leafMats[i%4]);l.position.set((Math.random()-.5)*.5*s,(2.1+i*.42)*s,(Math.random()-.5)*.5*s);l.castShadow=true;g.add(l)}}scene.add(g)}
+function tree(x,z,s=1,palm=false){let g=new THREE.Group();g.position.set(x,-.15,z);let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.17*s,.3*s,2.1*s,9),wood);trunk.position.y=1*s;trunk.castShadow=true;g.add(trunk);
+ // Relieves verticales en la corteza y raíces visibles.
+ for(let k=0;k<4;k++){let bark=new THREE.Mesh(new THREE.CylinderGeometry(.012*s,.025*s,1.45*s,5),mat(k%2?0x805638:0x49301f));bark.position.set(Math.cos(k*Math.PI/2)*.17*s,1*s,Math.sin(k*Math.PI/2)*.17*s);g.add(bark)}
+ for(let k=0;k<4;k++){let root=new THREE.Mesh(new THREE.ConeGeometry(.16*s,.75*s,5),wood);root.position.set(Math.cos(k*Math.PI/2)*.29*s,.13*s,Math.sin(k*Math.PI/2)*.29*s);root.rotation.z=Math.cos(k*Math.PI/2)*-.65;root.rotation.x=Math.sin(k*Math.PI/2)*.65;g.add(root)}
+ if(palm){for(let i=0;i<9;i++){let a=i*Math.PI*2/9,leaf=new THREE.Mesh(new THREE.ConeGeometry(.2*s,2.55*s,6),leafMats[i%4]);leaf.position.set(Math.cos(a)*.9*s,2.25*s,Math.sin(a)*.9*s);leaf.rotation.z=Math.cos(a)*-.9;leaf.rotation.x=Math.sin(a)*.9;leaf.castShadow=true;g.add(leaf)}let crown=new THREE.Mesh(new THREE.SphereGeometry(.28*s,12,10),leafMats[2]);crown.position.y=2.15*s;g.add(crown)}
+ else{for(let i=0;i<8;i++){let a=i*Math.PI*2/8;let l=new THREE.Mesh(new THREE.IcosahedronGeometry((.78+(i%3)*.1)*s,1),leafMats[i%4]);l.position.set(Math.cos(a)*.53*s,(2.35+(i%3)*.34)*s,Math.sin(a)*.53*s);l.castShadow=true;g.add(l)}
+  for(let i=0;i<4;i++){let l=new THREE.Mesh(new THREE.IcosahedronGeometry(.7*s,1),leafMats[(i+1)%4]);l.position.set((Math.random()-.5)*.65*s,(3.25+Math.random()*.35)*s,(Math.random()-.5)*.65*s);l.castShadow=true;g.add(l)}
+  // Pequeños brotes luminosos entre las hojas para dar profundidad a la copa.
+  for(let i=0;i<7;i++){let bud=new THREE.Mesh(new THREE.SphereGeometry(.055*s,8,6),i%2?mat(0xc5df68,.55):mat(0x9bcf53,.55));bud.position.set((Math.random()-.5)*1.45*s,2.25+Math.random()*1.25*s,(Math.random()-.5)*1.45*s);g.add(bud)}
+ }scene.add(g)}
 function fern(x,z,s=1){let g=new THREE.Group();g.position.set(x,0,z);for(let i=0;i<9;i++){let a=i*Math.PI*2/9;let f=new THREE.Mesh(new THREE.ConeGeometry(.18*s,1.9*s,5),leafMats[i%4]);f.position.set(Math.cos(a)*.58*s,.7*s,Math.sin(a)*.58*s);f.rotation.z=Math.cos(a)*-.9;f.rotation.x=Math.sin(a)*.9;g.add(f)}scene.add(g)}
 function rock(x,z,s=1){let r=new THREE.Mesh(new THREE.DodecahedronGeometry(.65*s),stone);r.position.set(x,.12*s,z);r.scale.y=.55;r.castShadow=true;scene.add(r)}
 // Río sinuoso fuera de los bordes del tablero, con orillas de piedra y reflejos.
@@ -212,9 +227,9 @@ function updateSnake(renderSnake=snake){
  }
 }
 let apples=[],applePositions=[],motionFrom=null,motionTo=null,motionStart=0,motionDuration=155;
-function appleMesh(){let g=new THREE.Group();let a=new THREE.Mesh(new THREE.SphereGeometry(.28,16,12),appleMat);a.scale.set(1,1.08,.95);a.castShadow=true;g.add(a);let stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,.17,6),wood);stem.position.y=.3;g.add(stem);let leaf=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),greenLeaf);leaf.scale.set(1,.25,.5);leaf.position.set(.1,.28,0);g.add(leaf);return g}
+function appleMesh(){let g=new THREE.Group();let halo=new THREE.Mesh(new THREE.TorusGeometry(.39,.035,8,28),new THREE.MeshBasicMaterial({color:0xffe56b,transparent:true,opacity:.78}));halo.rotation.x=Math.PI/2;halo.position.y=-.34;g.add(halo);let a=new THREE.Mesh(new THREE.SphereGeometry(.28,16,12),appleMat);a.scale.set(1,1.08,.95);a.castShadow=true;g.add(a);let shine=new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.72}));shine.position.set(-.11,.12,.22);g.add(shine);let stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,.17,6),wood);stem.position.y=.3;g.add(stem);let leaf=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),greenLeaf);leaf.scale.set(1,.25,.5);leaf.position.set(.1,.28,0);g.add(leaf);return g}
 function syncApples(){while(apples.length<applePositions.length){let a=appleMesh();scene.add(a);apples.push(a)}while(apples.length>applePositions.length)scene.remove(apples.pop());applePositions.forEach((p,i)=>apples[i].position.copy(P(p.x,p.y,.48)))}
-const dirs=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}],key=p=>p.x+','+p.y,inside=p=>p.x>0&&p.x<C-1&&p.y>0&&p.y<R-1;
+const dirs=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}],key=p=>p.x+','+p.y,inside=p=>p.x>=0&&p.x<C&&p.y>=0&&p.y<R;
 const MAX_SNAKE_LENGTH=200; // Keeps enough free cells for safe route planning during long LIVE sessions.
 const MAX_VISIBLE_APPLES=12;
 let pendingApples=0,targetAppleKey=null;
@@ -258,7 +273,7 @@ function bfs(start,goal,blocked){
 }
 function randomFreeCell(){
  const free=[];
- for(let y=1;y<R-1;y++)for(let x=1;x<C-1;x++){
+ for(let y=0;y<R;y++)for(let x=0;x<C;x++){
   const p={x,y},k=key(p);
   if(!snake.some(s=>key(s)===k)&&!applePositions.some(a=>key(a)===k))free.push(p);
  }
@@ -306,8 +321,9 @@ function chooseWanderMove(head,blocked){
   const area=freeAreaFrom(n,areaBlocked),visits=wanderVisits.get(k)||0;
   const forward=d.x===heading.x&&d.y===heading.y;
   const nearest=applePositions.length?Math.min(...applePositions.map(a=>Math.abs(a.x-n.x)+Math.abs(a.y-n.y))):0;
+  const edge=(n.x===0||n.x===C-1||n.y===0||n.y===R-1);
   const value=Math.min(area,100)*.09+(visits===0?8:0)-(visits*5.5)+
-              (forward?1.25:-.6)-nearest*.035+(Math.random()*.45);
+              (forward?1.25:-.6)-nearest*.035+(edge?2.2:0)+(Math.random()*.45);
   options.push({n,value});
  }
  options.sort((a,b)=>b.value-a.value);
@@ -352,7 +368,7 @@ function choose(){
 }
 let score=0,alive=false,started=0,timer=null,feed=[],leaders={},lastGiftAt=0,lastIdleAppleAt=0;const IDLE_APPLE_INTERVAL=5000;
 function updateUI(){$('score').textContent=score;$('length').textContent=snake.length;motionFrom=snake.map(p=>({...p}));motionTo=snake.map(p=>({...p}));motionStart=performance.now();updateSnake();syncApples()}
-function finish(msg){alive=false;clearInterval(timer);$('overlay').classList.remove('hidden');$('overlay').innerHTML=`<div><h1>FIN DE PARTIDA</h1><p>${msg}<br>Manzanas comidas: ${score}<br>Largo final: ${snake.length}</p><button id="again">NUEVA PARTIDA</button></div>`;$('again').onclick=start}
+function finish(msg){if(!alive)return;alive=false;clearInterval(timer);$('overlay').classList.remove('hidden');$('overlay').innerHTML=`<div><h1>¡BUENA PARTIDA!</h1><p>${msg}<br>🍎 Manzanas: ${score}<br>🐍 Largo: ${snake.length}<br><small>La jungla se reinicia en 3 segundos…</small></p></div>`;setTimeout(()=>{if(!alive)start()},3000)}
 function step(){
  if(!alive)return;
  const before=snake.map(p=>({...p}));
@@ -367,12 +383,12 @@ function step(){
    next=candidates[0]||null;
   }
  }
- if(!next)return;
+ if(!next){finish('La serpiente llegó al límite de movimiento.');return;}
  let eating=applePositions.some(a=>key(a)===key(next));
  let grow=eating&&snake.length<MAX_SNAKE_LENGTH;
  if(!inside(next)||snake.some((s,i)=>key(s)===key(next)&&!(i===snake.length-1&&!grow))){
   const alternative=chooseWanderMove(snake[0],new Set(snake.slice(0,-1).map(key)));
-  if(!alternative)return;
+  if(!alternative){finish('La serpiente se quedó sin espacio.');return;}
   next=alternative;
   eating=applePositions.some(a=>key(a)===key(next));
   grow=eating&&snake.length<MAX_SNAKE_LENGTH;
@@ -410,10 +426,12 @@ function start(){
 }
 function log(s){feed.unshift(s);feed=feed.slice(0,4);$('feed').innerHTML=feed.join('<br>')}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-let roseAlertTimer=null;function showRoseAlert(n){const alert=$('roseAlert');alert.innerHTML=`<span class="rose">🌹</span><span class="conversion">× ${Math.max(1,n)} = 🍎 × ${Math.max(1,n)}</span>`;alert.classList.remove('active');void alert.offsetWidth;alert.classList.add('active');clearTimeout(roseAlertTimer);roseAlertTimer=setTimeout(()=>alert.classList.remove('active'),5000)}
+let roseAlertTimer=null;function showRoseAlert(n){const alert=$('roseAlert'),applesWon=Math.max(5,Math.floor(n)),roses=Math.max(1,Math.round(applesWon/5));alert.innerHTML=`<span class="rose">🌹</span><span class="conversion">× ${roses} = 🍎 × ${applesWon}</span>`;alert.classList.remove('active');void alert.offsetWidth;alert.classList.add('active');clearTimeout(roseAlertTimer);roseAlertTimer=setTimeout(()=>alert.classList.remove('active'),5000)}
 function add(n,user,kind){if(!alive)start();spawn(Math.min(100,n));if(kind==='rosa')showRoseAlert(n);if(kind!=='nuevo seguidor'){lastGiftAt=Date.now();lastIdleAppleAt=Date.now()}leaders[user]=(leaders[user]||0)+n;$('leaders').innerHTML=Object.entries(leaders).sort((a,b)=>b[1]-a[1]).slice(0,5).map((v,i)=>`${i+1}. ${esc(v[0])} — ${v[1]} 🍎`).join('<br>');log(`${esc(user)}: +${n} 🍎 (${kind})`);syncApples()}
 let ws;function connect(){try{ws=new WebSocket('ws://127.0.0.1:21213/');ws.onopen=()=>{$('connection').textContent='TikFinity: conectado';log('Conectado a TikFinity')};ws.onclose=()=>{$('connection').textContent='TikFinity: desconectado';setTimeout(connect,4000)};ws.onerror=()=>{$('connection').textContent='TikFinity: revisar conexión'};ws.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch{return}let ev=(d.event||d.type||d.eventType||'').toLowerCase(),v=d.data||d,u=v.uniqueId||v.nickname||v.username||'Espectador';if(ev.includes('gift')||v.giftId!==undefined||v.giftName){let nm=(v.giftName||v.gift?.name||'').toLowerCase(),count=Number(v.repeatCount||v.repeat_count||1);if(v.repeatEnd===false)return;let rose=Number(v.giftId)===5655||nm.includes('rose')||nm.includes('rosa');if(rose)add(count*5,u,'rosa')}}}catch(e){$('connection').textContent='TikFinity: no disponible'}}
 $('start').onclick=start;
 function resize(){let r=stage.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(stage);resize();
 function animate(){requestAnimationFrame(animate);let now=performance.now(),t=now*.001;let blink=Math.max(0,1-Math.abs((t%5.8)-5.05)/.11);for(let i=0;i<eyeBlinkParts.length;i++){let e=eyeBlinkParts[i];e.group.scale.y=1-.84*blink;e.pupil.position.x=Math.sin(t*1.25+i*.7)*.012}if(motionFrom&&motionTo){let a=Math.min(1,(now-motionStart)/motionDuration);a=a*a*(3-2*a);let count=Math.max(motionFrom.length,motionTo.length),shown=[];for(let i=0;i<count;i++){let p0=motionFrom[Math.min(i,motionFrom.length-1)]||motionTo[i],p1=motionTo[Math.min(i,motionTo.length-1)]||p0;shown.push({x:p0.x+(p1.x-p0.x)*a,y:p0.y+(p1.y-p0.y)*a})}updateSnake(shown);if(a>=1)motionFrom=motionTo=null}headGroup.position.y+=Math.sin(t*7)*.006;apples.forEach((a,i)=>{a.position.y=.48+Math.sin(t*2+i)*.045;a.rotation.y=t*.45});ripples.forEach((r,i)=>{r.material.opacity=.22+.22*(.5+.5*Math.sin(t*1.4+i));r.scale.setScalar(.9+.12*Math.sin(t*1.1+i))});monkeys.forEach((m,i)=>{m.position.y=.025+Math.sin(t*1.1+i*1.7)*.035;m.rotation.z=Math.sin(t*.7+i)*.025});crocodiles.forEach((c,i)=>{c.position.y=.018+Math.sin(t*.8+i)*.018;c.rotation.y+=(Math.sin(t*.25+i)*.0008)});renderer.render(scene,camera)}animate();connect();
+// TikTok LIVE Studio Link no permite clics: iniciar automáticamente y reiniciar tras cada derrota.
+setTimeout(()=>{if(!alive)start()},900);
 </script></body></html>
