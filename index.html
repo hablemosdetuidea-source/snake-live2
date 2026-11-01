@@ -11,7 +11,7 @@ button{border:0;border-radius:9px;padding:10px 16px;background:linear-gradient(9
 
 #app{padding:0;gap:0;border:0;box-shadow:none;width:min(100vw,56.25vh);height:min(100vh,177.78vw);background:#061b20}
 header,.stats,.bottom,footer{display:none!important}
-#stage{width:100%;height:100%;flex:1;min-height:0;border:0;border-radius:0;box-shadow:none}
+#stage{position:absolute;left:0;top:50%;transform:translateY(-50%);width:100%;height:auto;aspect-ratio:16/9;flex:none;min-height:0;border:0;border-radius:0;box-shadow:0 0 28px #00e0b733}
 #giftGuide{position:absolute;z-index:5;left:50%;top:15%;transform:translateX(-50%);min-width:max-content;text-align:center;background:#10142be8;border:1.5px solid #8d75ff;border-radius:13px;padding:8px 15px;color:#fff;font-size:clamp(13px,2.2vw,19px);font-weight:800;line-height:1.55;box-shadow:0 3px 16px #09051ca8;pointer-events:none}
 #giftGuide b{color:#ffe16a}
 #roseAlert{position:absolute;z-index:6;left:50%;top:27%;transform:translate(-50%,-50%) scale(.92);display:none;align-items:center;gap:10px;padding:12px 20px;border:2px solid #ff8a9b;border-radius:16px;background:linear-gradient(135deg,#5a1237ed,#24123ced);box-shadow:0 6px 26px #13051dcc;color:#fff;font-size:clamp(20px,4vw,34px);font-weight:900;white-space:nowrap;pointer-events:none;text-shadow:0 2px 5px #210515}
@@ -28,9 +28,9 @@ header,.stats,.bottom,footer{display:none!important}
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 const $=id=>document.getElementById(id),stage=$('stage'),canvas=$('scene');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x356d3d);scene.fog=null;
-const camera=new THREE.PerspectiveCamera(54.5,1,.1,120);camera.position.set(0,37,33);camera.lookAt(0,0,0);
+const camera=new THREE.PerspectiveCamera(54.5,1,.1,120);camera.position.set(33,37,0);camera.lookAt(0,0,0);
 scene.add(new THREE.HemisphereLight(0xf3ffe9,0x52754a,2.8));
 const sun=new THREE.DirectionalLight(0xfff4d9,4.0);sun.position.set(-12,24,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;scene.add(sun);
 const mat=(c,r=.8,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
